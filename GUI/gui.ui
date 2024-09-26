@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>1094</width>
+                <height>806</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>ROV Control Interface</string>
+        </property>
+        <widget class="QWidget" name="centralwidget">
+            <layout class="QHBoxLayout" name="horizontalLayout">
+                <!-- Column 1: Video Feed (2/3 of the width) -->
+                <item>
+                    <widget class="QLabel" name="videoFeedLabel">
+                        <property name="text">
+                            <string>Live Video Feed</string>
+                        </property>
+                        <property name="alignment">
+                            <set>Qt::AlignCenter</set>
+                        </property>
+                        <property name="sizePolicy">
+                            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                                <horstretch>2</horstretch>
+                                <verstretch>0</verstretch>
+                            </sizepolicy>
+                        </property>
+                        <property name="styleSheet">
+                            <string notr="true">
+                                background-color: grey;
+                                color: white;
+                                font-size: 24px;
+                                font-weight: bold;
+                                margin: 10px
+                            </string>
+                        </property>
+                    </widget>
+                </item>
+                <!-- Column 2: Telemetry and Control Buttons (1/3 of the width) -->
+                <item>
+                    <layout class="QVBoxLayout" name="rightColumnLayout">
+                        <!-- Row 1: Setup section -->
+                        <item>
+                            <widget class="QGroupBox" name="setupSection">
+                                <property name="title">
+                                    <string>Setup</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">
+                                        font-weight: bold;
+                                        font-size: 20px
+                                        padding: 10px;
+                                    </string>
+                                </property>
+                                <layout class="QGridLayout" name="gridLayout_4">
+
+                                    <!-- Row 0, Column 1: ROV Connect Button -->
+                                    <item row="0" column="0">
+                                        <widget class="QLabel" name="label_3">
+                                            <property name="text">
+                                                <string>ROV</string>
+                                            </property>
+                                            <property name="alignment">
+                                                <set>Qt::AlignCenter</set>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+
+                                    <item row="0" column="1">
+                                        <widget class="QPushButton" name="control_rov_connect">
+                                            <property name="text">
+                                                <string>CONNECT</string>
+                                            </property>
+                                            <property name="checkable">
+                                                <bool>true</bool>
+                                            </property>
+                                            <property name="styleSheet">
+                                                <string notr="true">
+                                                    background-color: green;
+                                                    color: white;
+                                                    border-radius: 20px;
+                                                    font-weight: bold;
+                                                    padding: 10px;
+                                                </string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 1, Column 0: Controller Label -->
+                                    <item row="1" column="0">
+                                        <widget class="QLabel" name="label_4">
+                                            <property name="text">
+                                                <string>CONTROLLER</string>
+                                            </property>
+                                            <property name="alignment">
+                                                <set>Qt::AlignCenter</set>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 1, Column 1: Controller Connect Button -->
+                                    <item row="1" column="1">
+                                        <widget class="QPushButton" name="control_controller_connect">
+                                            <property name="text">
+                                                <string>CONNECT</string>
+                                            </property>
+                                            <property name="checkable">
+                                                <bool>true</bool>
+                                            </property>
+                                            <property name="styleSheet">
+                                                <string notr="true">
+                                                    background-color: green;
+                                                    color: white;
+                                                    border-radius: 20px;
+                                                    font-weight: bold;
+                                                    padding: 10px;
+                                                </string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                </layout>
+
+                            </widget>
+                        </item>
+                        <!-- Row 2: Sensors section -->
+                        <item>
+                            <widget class="QGroupBox" name="sensorsSection">
+                                <property name="title">
+                                    <string>Sensors</string>
+                                </property>
+                                <layout class="QGridLayout" name="sensorsGridLayout">
+                                    <!-- Temperature -->
+                                    <item row="0" column="0">
+                                        <widget class="QLabel" name="temperatureLabelTitle">
+                                            <property name="text">
+                                                <string>Temperature:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="1" column="0">
+                                        <widget class="QLabel" name="temperatureLabel">
+                                            <property name="text">
+                                                <string>N/A</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <!-- Depth -->
+                                    <item row="0" column="1">
+                                        <widget class="QLabel" name="depthLabelTitle">
+                                            <property name="text">
+                                                <string>Depth:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="1" column="1">
+                                        <widget class="QLabel" name="depthLabel">
+                                            <property name="text">
+                                                <string>N/A</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <!-- Yaw -->
+                                    <item row="2" column="0">
+                                        <widget class="QLabel" name="yawLabelTitle">
+                                            <property name="text">
+                                                <string>Yaw:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="3" column="0">
+                                        <widget class="QLabel" name="yawLabel">
+                                            <property name="text">
+                                                <string>N/A</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <!-- Pitch -->
+                                    <item row="2" column="1">
+                                        <widget class="QLabel" name="pitchLabelTitle">
+                                            <property name="text">
+                                                <string>Pitch:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="3" column="1">
+                                        <widget class="QLabel" name="pitchLabel">
+                                            <property name="text">
+                                                <string>N/A</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <!-- Roll -->
+                                    <item row="4" column="0">
+                                        <widget class="QLabel" name="rollLabelTitle">
+                                            <property name="text">
+                                                <string>Roll:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="5" column="0">
+                                        <widget class="QLabel" name="rollLabel">
+                                            <property name="text">
+                                                <string>N/A</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <!-- Acceleration -->
+                                    <item row="4" column="1">
+                                        <widget class="QLabel" name="accelerationLabelTitle">
+                                            <property name="text">
+                                                <string>Acceleration:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="5" column="1">
+                                        <widget class="QLabel" name="accelerationLabel">
+                                            <property name="text">
+                                                <string>N/A</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <!-- Gyroscope -->
+                                    <item row="6" column="0">
+                                        <widget class="QLabel" name="gyroscopeLabelTitle">
+                                            <property name="text">
+                                                <string>Gyroscope:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="6" column="1">
+                                        <widget class="QLabel" name="gyroscopeLabel">
+                                            <property name="text">
+                                                <string>N/A</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                        </item>
+
+                        <!-- Row 3: Thruster section -->
+                        <item>
+                            <widget class="QGroupBox" name="thrustersSection">
+                                <property name="title">
+                                    <string>Thrusters</string>
+                                </property>
+                                <layout class="QGridLayout" name="thrustersLayout">
+                                    <!-- Row 1: Thruster 1 -->
+                                    <item row="0" column="0">
+                                        <widget class="QLabel" name="thruster1LabelTitle">
+                                            <property name="text">
+                                                <string>Thruster 1</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="1" column="0">
+                                        <widget class="QLabel" name="thruster1SpeedLabel">
+                                            <property name="text">
+                                                <string>0 RPM</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="0" column="1">
+                                        <widget class="QPushButton" name="thruster1TestButton">
+                                            <property name="text">
+                                                <string>Test Thruster 1</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="1" column="1">
+                                        <widget class="QLabel" name="thruster1StatusLabel">
+                                            <property name="text">
+                                                <string>Status: Unknown</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 2: Thruster 2 -->
+                                    <item row="2" column="0">
+                                        <widget class="QLabel" name="thruster2LabelTitle">
+                                            <property name="text">
+                                                <string>Thruster 2</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="3" column="0">
+                                        <widget class="QLabel" name="thruster2SpeedLabel">
+                                            <property name="text">
+                                                <string>0 RPM</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="2" column="1">
+                                        <widget class="QPushButton" name="thruster2TestButton">
+                                            <property name="text">
+                                                <string>Test Thruster 2</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="3" column="1">
+                                        <widget class="QLabel" name="thruster2StatusLabel">
+                                            <property name="text">
+                                                <string>Status: Unknown</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 3: Thruster 3 -->
+                                    <item row="4" column="0">
+                                        <widget class="QLabel" name="thruster3LabelTitle">
+                                            <property name="text">
+                                                <string>Thruster 3</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="5" column="0">
+                                        <widget class="QLabel" name="thruster3SpeedLabel">
+                                            <property name="text">
+                                                <string>0 RPM</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="4" column="1">
+                                        <widget class="QPushButton" name="thruster3TestButton">
+                                            <property name="text">
+                                                <string>Test Thruster 3</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="5" column="1">
+                                        <widget class="QLabel" name="thruster3StatusLabel">
+                                            <property name="text">
+                                                <string>Status: Unknown</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 4: Thruster 4 -->
+                                    <item row="6" column="0">
+                                        <widget class="QLabel" name="thruster4LabelTitle">
+                                            <property name="text">
+                                                <string>Thruster 4</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="7" column="0">
+                                        <widget class="QLabel" name="thruster4SpeedLabel">
+                                            <property name="text">
+                                                <string>0 RPM</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="6" column="1">
+                                        <widget class="QPushButton" name="thruster4TestButton">
+                                            <property name="text">
+                                                <string>Test Thruster 4</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="7" column="1">
+                                        <widget class="QLabel" name="thruster4StatusLabel">
+                                            <property name="text">
+                                                <string>Status: Unknown</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 5: Thruster 5 -->
+                                    <item row="8" column="0">
+                                        <widget class="QLabel" name="thruster5LabelTitle">
+                                            <property name="text">
+                                                <string>Thruster 5</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="9" column="0">
+                                        <widget class="QLabel" name="thruster5SpeedLabel">
+                                            <property name="text">
+                                                <string>0 RPM</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="8" column="1">
+                                        <widget class="QPushButton" name="thruster5TestButton">
+                                            <property name="text">
+                                                <string>Test Thruster 5</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="9" column="1">
+                                        <widget class="QLabel" name="thruster5StatusLabel">
+                                            <property name="text">
+                                                <string>Status: Unknown</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 6: Thruster 6 -->
+                                    <item row="10" column="0">
+                                        <widget class="QLabel" name="thruster6LabelTitle">
+                                            <property name="text">
+                                                <string>Thruster 6</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="11" column="0">
+                                        <widget class="QLabel" name="thruster6SpeedLabel">
+                                            <property name="text">
+                                                <string>0 RPM</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="10" column="1">
+                                        <widget class="QPushButton" name="thruster6TestButton">
+                                            <property name="text">
+                                                <string>Test Thruster 6</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="11" column="1">
+                                        <widget class="QLabel" name="thruster6StatusLabel">
+                                            <property name="text">
+                                                <string>Status: Unknown</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                </layout>
+                            </widget>
+                        </item>
+
+                        <!-- Row 5: Terminal section -->
+                        <item>
+                            <widget class="QGroupBox" name="terminalSection">
+                                <property name="title">
+                                    <string>Terminal</string>
+                                </property>
+                                <layout class="QVBoxLayout" name="terminalLayout">
+                                    <item>
+                                        <widget class="QTextEdit" name="terminalOutputLabel">
+                                            <property name="plainText">
+                                                <string>Logs will be displayed here...</string>
+                                            </property>
+                                            <property name="alignment">
+                                                <set>Qt::AlignLeft</set>
+                                            </property>
+                                            <property name="readOnly">
+                                                <bool>true</bool>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                        </item>
+
+                    </layout>
+                    <property name="styleSheet">
+                        <string notr="true">
+                            marginRight: 10px
+                        </string>
+                    </property>
+                </item>
+            </layout>
+        </widget>
+        <widget class="QMenuBar" name="menubar"/>
+        <widget class="QStatusBar" name="statusbar"/>
+    </widget>
+</ui>
