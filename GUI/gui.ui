@@ -19,7 +19,7 @@
                 <item>
                     <widget class="QLabel" name="videoFeedLabel">
                         <property name="text">
-                            <string>Live Video Feed</string>
+                            <string>Video Feed</string>
                         </property>
                         <property name="alignment">
                             <set>Qt::AlignCenter</set>
@@ -109,6 +109,72 @@
                                         <widget class="QPushButton" name="control_controller_connect">
                                             <property name="text">
                                                 <string>CONNECT</string>
+                                            </property>
+                                            <property name="checkable">
+                                                <bool>true</bool>
+                                            </property>
+                                            <property name="styleSheet">
+                                                <string notr="true">
+                                                    background-color: green;
+                                                    color: white;
+                                                    border-radius: 20px;
+                                                    font-weight: bold;
+                                                    padding: 10px;
+                                                </string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 2, Column 0: Camera Label -->
+                                    <item row="2" column="0">
+                                        <widget class="QLabel" name="Camera_label">
+                                            <property name="text">
+                                                <string>CAMERA</string>
+                                            </property>
+                                            <property name="alignment">
+                                                <set>Qt::AlignCenter</set>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 2, Column 1: Camera Connect Button -->
+                                    <item row="2" column="1">
+                                        <widget class="QPushButton" name="camera_connect">
+                                            <property name="text">
+                                                <string>CONNECT</string>
+                                            </property>
+                                            <property name="checkable">
+                                                <bool>true</bool>
+                                            </property>
+                                            <property name="styleSheet">
+                                                <string notr="true">
+                                                    background-color: green;
+                                                    color: white;
+                                                    border-radius: 20px;
+                                                    font-weight: bold;
+                                                    padding: 10px;
+                                                </string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 3, Column 0: Sensor Label -->
+                                    <item row="3" column="0">
+                                        <widget class="QLabel" name="Sensor_label">
+                                            <property name="text">
+                                                <string>SENSOR</string>
+                                            </property>
+                                            <property name="alignment">
+                                                <set>Qt::AlignCenter</set>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <!-- Row 3, Column 1: Sensor Connect Button -->
+                                    <item row="3" column="1">
+                                        <widget class="QPushButton" name="sensor_connect">
+                                            <property name="text">
+                                                <string>SENSOR</string>
                                             </property>
                                             <property name="checkable">
                                                 <bool>true</bool>
@@ -221,21 +287,6 @@
                                     </item>
                                     <item row="5" column="1">
                                         <widget class="QLabel" name="accelerationLabel">
-                                            <property name="text">
-                                                <string>N/A</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <!-- Gyroscope -->
-                                    <item row="6" column="0">
-                                        <widget class="QLabel" name="gyroscopeLabelTitle">
-                                            <property name="text">
-                                                <string>Gyroscope:</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="6" column="1">
-                                        <widget class="QLabel" name="gyroscopeLabel">
                                             <property name="text">
                                                 <string>N/A</string>
                                             </property>

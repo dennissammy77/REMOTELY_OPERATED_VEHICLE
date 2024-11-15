@@ -2,6 +2,7 @@
 try:
     import os, sys
     import io
+    import json
     import requests
     import socket
     import pickle
@@ -9,9 +10,10 @@ try:
     import random
     import serial
     import pygame
+    import numpy as np
     from PyQt5 import uic
     from PyQt5.QtWidgets import (QMainWindow, QApplication,
-                                 QLabel, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QTextEdit)
+                                 QLabel, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QTextEdit, QSizePolicy)
     from PyQt5 import QtGui
     from PyQt5.QtGui import QImage, QPixmap, QFont
     from PyQt5.QtCore import QTimer, Qt, QSize, QThread, pyqtSignal
@@ -24,7 +26,6 @@ except:
     sys.exit("\n###################################################################################################"
              "\nSome libraries are missing! Run the 'install_libraries.bat' file to install the required libraries."
              "\n###################################################################################################")
-
 
 def getResourcePath(relativePath):
     """
@@ -39,17 +40,16 @@ def getResourcePath(relativePath):
 
 class UIWINDOW(QMainWindow):
     """
-    Contains functions to initiate the GUI, link the widgets and connect
-    all the signals/slots from external libraries together.
+        Contains functions to initiate the GUI, link the widgets and connect all the signals/slots
+        from external libraries together.
     """
 
     def __init__(self, app):
         """
-        Class constructor.
-        Loads GUI, call functions to initiate all the libraries and connects the signal/slots together.
+            Class constructor.
+            Loads GUI, call functions to initiate all the libraries and connects the signal/slots together.
 
-        INPUT:
-        - app: QApplication object (required to allow theme changing).
+            INPUT: app: QApplication object (required to allow theme changing).
         """
         super(UIWINDOW, self).__init__()
 
@@ -63,8 +63,12 @@ class UIWINDOW(QMainWindow):
         # INITIATE OBJECTS
         self.initiateObjects()
 
-        # Initialize Pygame and the controller
-        pygame.init()
+        # Set up a timer to check the controller state
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.updateControllerState)
+        self.timer.start(50)  # Check every 50 milliseconds
+        '''
+                pygame.init()
         pygame.joystick.init()
         self.controller = None
         if pygame.joystick.get_count() > 0:
@@ -77,41 +81,63 @@ class UIWINDOW(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateControllerState)
         self.timer.start(50)  # Check every 50 milliseconds
-
-
+        '''
         # INITIAL STARTUP MESSAGE
         self.printTerminal("Welcome to the control interface.")
         self.printTerminal("Connect to the ROV and CONTROLLER to get started.")
 
         # LAUNCH GUI
+
     def initUI(self):
         """
-        Initializes the user interface.
+            Initializes the user interface.
         """
         self.setWindowTitle("ROV Control Interface")
+
     def initiateObjects(self):
         """
-        Initiates buttons and their slots.
+            Initiates buttons and their slots.
         """
-        # Serial connection setup
-        self.isConnected = False
-        self.ssh_client = None
-        self.pi_hostname = 'raspberrypi.local'  # Replace with your Raspberry Pi's IP
-        self.username = 'sammy'  # Raspberry Pi username
-        self.password = 'password'  # Raspberry Pi password
+        # Serial connection to the Raspberry PI setup
+        self.isConnected =  False
+        self.ssh_client =   None
+        self.pi_hostname =  'raspberrypi.local'  # Replace with your Raspberry Pi's IP
+        self.username =     'sammy'  # Raspberry Pi username
+        self.password =     'password'  # Raspberry Pi password
 
-        # ROV connect button
+        '''
+            UTIL SETUP
+        '''
+        self.timer = QTimer()
+        '''
+            ROV SETUP
+        '''
+        # connect button
         self.rovConnectButton = self.findChild(QPushButton, 'control_rov_connect')
         self.rovConnectButton.clicked.connect(self.toggleROVConnection)
 
+        '''
+            CONTROLLER SETUP
+        '''
+        # connect button
 
         self.connectControllerButton = self.findChild(QPushButton, 'control_controller_connect')
         self.connectControllerButton.clicked.connect(self.toggleControllerConnection)
+        self.controller = None
+        # Set up a timer to check the controller state
 
+        '''
+            GUI TERMINAL SETUP
+        '''
         self.terminalTextEdit = self.findChild(QTextEdit, 'terminalOutputLabel')
         if not self.terminalTextEdit:
             print("Error: terminalTextEdit not found. Please check the name in the .ui file.")
 
+        '''
+            THRUSTER SETUP
+        '''
+        self.client_socket = None
+        self.motor_socket = None
         # Find the thruster labels and buttons
         self.thrusterSpeedLabels = [
             self.findChild(QLabel, f'thruster{i}SpeedLabel') for i in range(1, 7)
@@ -127,17 +153,50 @@ class UIWINDOW(QMainWindow):
         for i, button in enumerate(self.thrusterTestButtons):
             button.clicked.connect(lambda _, x=i + 1: self.testThruster(x))
 
-        # Video feed QLabel
-        self.camera_active = False
-        self.stream_url = 'http://192.168.16.104:5001/video_feed'
-        self.videoFeedLabel = self.findChild(QLabel, 'videoFeedLabel')
+        '''
+            CAMERA SETUP
+        '''
+        # Connect Button
+        self.CameraConnectButton = self.findChild(QPushButton, 'camera_connect')
+        self.CameraConnectButton.clicked.connect(self.toggleCameraConnection)
 
-        self.client_socket = None
-        self.motor_socket = None
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_video_feed)
+        # Video Feed
+        self.video_label = self.findChild(QLabel, 'videoFeedLabel')
+        self.video_label.setAlignment(Qt.AlignCenter)
+        self.video_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.video_label.setMaximumSize(806,1094)  # Set max size to control growth
 
-        self.start_feed()
+
+        # Timer to periodically fetch video frames
+        self.timer.timeout.connect(self.update_frame)
+        self.timer.start(60)  # Update every 30 ms (~30 FPS)
+
+        # Flask video stream URLs
+        self.video_url = "http://192.168.16.104:5001/video_feed"  # Replace with your Flask server IP
+        self.shutdown_url = "http://192.168.16.104:5001/shutdown"  # Replace with your Flask server IP
+
+        self.video_feed_active=False
+        '''
+            self.camera_active = False
+            self.stream_url = 'http://192.168.16.104:5001/video_feed'
+            self.videoFeedLabel = self.findChild(QLabel, 'videoFeedLabel')
+        '''
+
+        '''
+            SENSORS SETUP
+        '''
+        self.SensorConnectButton = self.findChild(QPushButton, 'sensor_connect')
+        self.SensorConnectButton.clicked.connect(self.toggleSensorConnection)
+        # SENSORS
+        self.sensors_socket = None
+        self.sensor_client_socket = None
+
+        self.temperatureLabel = self.findChild(QLabel, 'temperatureLabel')
+        self.pitchLabel = self.findChild(QLabel, 'pitchLabel')
+        self.rollLabel = self.findChild(QLabel, 'rollLabel')
+        self.yawLabel = self.findChild(QLabel, 'yawLabel')
+        self.accelerationLabel = self.findChild(QLabel, 'accelerationLabel')
+
     def getScreenSize(self):
         """
         Gets the width and height of the screen.
@@ -151,6 +210,7 @@ class UIWINDOW(QMainWindow):
         screenHeight = sizeObject.height()
 
         return screenWidth, screenHeight
+
     def printTerminal(self, text):
         """
         PURPOSE
@@ -165,39 +225,93 @@ class UIWINDOW(QMainWindow):
 
         NONE
         """
-        # time = datetime.now().strftime("%H:%M:%S")
-        # string = time + " -> " + str(text)
-        # self.terminalTextEdit.setPlainText(string)
-        # self.terminalTextEdit.verticalScrollBar().setValue(self.terminalTextEdit.verticalScrollBar().maximum())
 
         currentText = self.terminalTextEdit.toPlainText()
         newText = f"{datetime.now().strftime('%H:%M:%S')} -> {text}\n"
         self.terminalTextEdit.setPlainText(currentText + newText)
         self.terminalTextEdit.verticalScrollBar().setValue(self.terminalTextEdit.verticalScrollBar().maximum())
+
+    '''
+        SYSTEM SETUP
+    '''
     def toggleROVConnection(self):
         """
-        Toggles between connecting and disconnecting the Raspberry Pi to the GUI over Ethernet.
+            Toggles between connecting and disconnecting the Raspberry Pi to the GUI over Ethernet.
         """
         if self.isConnected:
             self.disconnectFromROV()
         else:
             self.connectToROV()
+
     def connectToROV(self):
         """
-        Establishes an SSH connection to the Raspberry Pi using its hostname over Ethernet.
+            Establishes an SSH connection to the Raspberry Pi using its hostname over Ethernet.
         """
         try:
-            # Create SSH Client
+            # Create SSH Client && Establish the serial connection
             self.ssh_client = paramiko.SSHClient()
-            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            self.ssh_client.connect(self.pi_hostname, username=self.username, password=self.password)
+            if self.ssh_client:
+                self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                self.ssh_client.connect(self.pi_hostname, username=self.username, password=self.password)
 
-            # Establish the serial connection
-            self.isConnected = True
-            self.printTerminal("Connected to ROV")
+                self.isConnected = True
+                self.printTerminal("Connected to ROV over SSH")
+                # Video Feed
+                '''
+                    self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
+                '''
+                # THRUSTERS
 
-            # Flash the onboard LED 3 times by executing the script remotely
-            self.flashOnboardLED()
+                self.ssh_client.exec_command('python3 /home/sammy/ROV/thruster.py')
+
+                threading.Thread(target=self.updateControllerState).start()
+
+                self.motor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.motor_socket.connect(('192.168.1.2', 8486))  # Pi's IP address and port
+
+                # SENSORS
+                self.ssh_client.exec_command('python3 /home/sammy/ROV/sensors.py')
+
+                self.sensors_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.sensors_socket.connect(('192.168.1.2', 8487))  # Pi's IP address and port
+
+                # Update button style to show disconnection option
+                self.rovConnectButton.setText("DISCONNECT")
+                self.rovConnectButton.setStyleSheet("""
+                    background-color: red;
+                    color: white;
+                    border-radius: 20px;
+                    font-weight: bold;
+                    padding: 10px;
+                """)
+            else:
+                self.printTerminal("No ROV system detected.")
+                self.rovConnectButton("""
+                    background-color: grey;
+                    color: white;
+                    border-radius: 20px;
+                    font-weight: bold;
+                    padding: 10px;
+                """)
+
+            '''
+
+
+            self.sensors_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sensors_socket.connect(('192.168.16.104', 8487))  # Pi's IP address and port
+
+            threading.Thread(target=self.handle_sensors).start()
+            
+            # Start the video feed server
+            stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
+            # Replace with the correct path to your file
+
+            # Print any errors from the server start
+            print(stdout.read().decode())
+            print(stderr.read().decode())
+
+            threading.Thread(target=self.update_frame).start()
+            #self.update_frame()
 
             # Update button style to show disconnection option
             self.rovConnectButton.setText("DISCONNECT")
@@ -210,33 +324,211 @@ class UIWINDOW(QMainWindow):
             """)
 
             # Camera
-            self.start_feed()
-            #self.ssh_client.exec_command("python3 /home/sammy/ROV/video_feed.py")
+            
+            '''
         except Exception as e:
-            self.printTerminal(f"Failed to connect to ROV: {e}")
+            self.ssh_client.close()
+            self.printTerminal(f"Failed to connect to ROV over SSH: {e}")
+
     def disconnectFromROV(self):
         """
-        Closes the SSH connection to the Raspberry Pi.
+            Closes the SSH connection to the Raspberry Pi over ETHERNET.
         """
         try:
-            if self.ssh_client:
-                self.ssh_client.close()
-                self.isConnected = False
-                self.printTerminal("Disconnected from ROV")
+            # Update button style to show connection option
+            self.isConnected = False
+            self.printTerminal("Disconnected from ROV.")
+            self.rovConnectButton.setText("CONNECT")
+            self.rovConnectButton.setStyleSheet("""
+                background-color: green;
+                color: white;
+                border-radius: 20px;
+                font-weight: bold;
+                padding: 10px;
+            """)
 
-                # Update button style to show connection option
-                self.rovConnectButton.setText("CONNECT")
-                self.rovConnectButton.setStyleSheet("""
-                                background-color: green;
-                                color: white;
-                                border-radius: 20px;
-                                font-weight: bold;
-                                padding: 10px;
-                            """)
-                # Camera
-                self.stop_feed()
+            '''
+            # Attempt to gracefully shut down the server first
+            shutdown_url = "http://192.168.16.104:5001/shutdown"  # Update with the correct IP
+            try:
+                response = requests.get(shutdown_url)
+                print(response.text)
+            except Exception as e:
+                print(f"Error shutting down the server gracefully: {e}")
+
+                # If the graceful shutdown fails, kill the process
+                print("Attempting to kill the process directly...")
+                stdin, stdout, stderr = self.ssh_client.exec_command('pgrep -f video_feed.py')
+                pid = stdout.read().strip()
+
+                if pid:
+                    # Kill the process using the PID
+                    kill_command = f'kill {pid}'
+                    self.ssh_client.exec_command(kill_command)
+                    print(f"Video feed process with PID {pid} has been killed.")
+                else:
+                    print("No process found for video_feed.py")
+            finally:
+                if self.ssh_client:
+                    self.ssh_client.close()
+                    self.isConnected = False
+                    self.printTerminal("Disconnected from ROV")
+
+                    # Update button style to show connection option
+                    self.rovConnectButton.setText("CONNECT")
+                    self.rovConnectButton.setStyleSheet("""
+                                    background-color: green;
+                                    color: white;
+                                    border-radius: 20px;
+                                    font-weight: bold;
+                                    padding: 10px;
+                                """)
+            '''
         except Exception as e:
             self.printTerminal(f"Failed to disconnect from ROV: {e}")
+
+    '''
+        CONTROLLER SETUP
+    '''
+    def toggleControllerConnection(self):
+        """
+            Toggles the connection state of the Xbox controller.
+        """
+        if self.controller:
+            # DisConnect the controller
+            pygame.joystick.quit()
+            pygame.quit()
+            self.controller = None
+            self.connectControllerButton.setText("CONNECT")
+            self.printTerminal("Controller disconnected.")
+            self.connectControllerButton.setStyleSheet("""
+                background-color: green;
+                color: white;
+                border-radius: 20px;
+                font-weight: bold;
+                padding: 10px;
+            """)
+        else:
+            # Connect the controller
+            pygame.init()
+            pygame.joystick.init()
+            if pygame.joystick.get_count() > 0:
+                self.controller = pygame.joystick.Joystick(0)
+                self.controller.init()
+                '''
+                    # Start the thruster program
+                    stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/thruster.py')
+                    # Replace with the correct path to your file
+    
+                    # Print any errors from the server start
+                    print(stdout.read().decode())
+                    print(stderr.read().decode())
+    
+                    threading.Thread(target=self.updateControllerState).start()
+    
+                    self.motor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.motor_socket.connect(('192.168.16.104', 8486))  # Pi's IP address and port
+                '''
+
+                self.connectControllerButton.setText("DISCONNECT")
+                self.connectControllerButton.setStyleSheet("""
+                    background-color: red;
+                    color: white;
+                    border-radius: 20px;
+                    font-weight: bold;
+                    padding: 10px;
+                """)
+                self.printTerminal("Controller connected.")
+            else:
+                self.printTerminal("No controller detected.")
+                self.connectControllerButton.setStyleSheet("""
+                    background-color: grey;
+                    color: white;
+                    border-radius: 20px;
+                    font-weight: bold;
+                    padding: 10px;
+                """)
+
+    def updateControllerState(self):
+        """
+        PURPOSE
+            Contains the functions to read input from the XBOX controller.
+        """
+        if self.controller:
+            pygame.event.pump()
+
+            # Dictionary to store the state of buttons and axes
+            controller_state = {
+                "buttons": {},
+                "axes": {}
+            }
+
+            # Mapping for button actions
+            direction_map = {
+                0: 'Up',  # A Button
+                1: 'Down',  # B Button
+                2: 'Left',  # X Button
+                3: 'Right',  # Y Button
+                4: 'Forward',  # LB
+                5: 'Backward',  # RB
+            }
+
+            # Reading all button states
+            for button_id in range(self.controller.get_numbuttons()):
+                if self.controller.get_button(button_id):
+                    current_direction = direction_map.get(button_id)
+                    self.printTerminal(f"Moving {current_direction}")
+
+                    if current_direction is not None:
+                        self.send_motor_command(current_direction)
+                        self.printTerminal("command sent")
+
+                controller_state["buttons"][f"Button_{button_id}"] = self.controller.get_button(button_id)
+
+            # Reading all axis states (e.g., sticks and triggers)
+            for j in range(self.controller.get_numaxes()):
+                controller_state["axes"][f"Axis_{j}"] = round(self.controller.get_axis(j), 2)
+
+            #print(controller_state)
+
+    '''
+        SENSORS SETUP
+    '''
+    def handle_sensors(self):
+        try:
+            full_data = ""
+            while True:
+                # Receive the data
+                sensor_data_json = self.sensors_socket.recv(1024).decode()  # Decode the received data
+                # Append received data to full_data
+                full_data += sensor_data_json
+
+                # Deserialize JSON string to dictionary
+                sensor_values = json.loads(full_data)
+
+                # Deserialize JSON string to dictionary
+                temperature = sensor_values['temp']
+                pitch = sensor_values['pitch']
+                roll = sensor_values['roll']
+                yaw = sensor_values['yaw']
+                accel_x = sensor_values['accel-x']
+
+                full_data = ""
+                # Update the temperature value
+                self.temperatureLabel.setText(str(format(temperature,".2f")))
+                self.pitchLabel.setText(str(format(pitch, ".2f")))
+                self.rollLabel.setText(str(format(roll, ".2f")))
+                self.yawLabel.setText(str(format(yaw, ".2f")))
+                self.accelerationLabel.setText(str(format(accel_x, ".2f")))
+
+        except Exception as e:
+            self.printTerminal(f"Error handling sensors: {e}")
+            self.sensors_socket.close()
+        finally:
+            self.printTerminal(f"Sensors Disconnected")
+            self.sensors_socket.close()
+
+    ''' CAMERA SOCKET HANDLERS
     def start_feed(self):
         """Start the camera feed in a separate thread."""
         """Connect to the Raspberry Pi and start receiving frames."""
@@ -248,6 +540,7 @@ class UIWINDOW(QMainWindow):
             # self.update_video_feed()
         except Exception as e:
             print(f"Error connecting to Raspberry Pi: {e}")
+
     def stop_feed(self):
         """Handle widget close event."""
         if self.client_socket:
@@ -302,95 +595,11 @@ class UIWINDOW(QMainWindow):
         except Exception as e:
             print(f"Error receiving frame: {e}")
             self.client_socket.close()
-    def toggleControllerConnection(self):
-        """
-        Toggles the connection state of the Xbox controller.
-        """
-        if self.controller:
-            # DisConnect the controller
-            pygame.joystick.quit()
-            pygame.quit()
-            self.controller = None
-            self.connectControllerButton.setText("CONNECT")
-            self.setButtonStyle("background-color: green; color: white; border-radius: 20px; font-weight: bold; padding: 10px;")
-            self.printTerminal("Controller disconnected.")
-        else:
-            # Connect the controller
-            pygame.init()
-            pygame.joystick.init()
-            if pygame.joystick.get_count() > 0:
-                self.controller = pygame.joystick.Joystick(0)
-                self.controller.init()
-                '''
-                self.motor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.motor_socket.connect(('192.168.16.104', 8486))  # Pi's IP address and port
-                '''
-                self.connectControllerButton.setText("DISCONNECT")
-                self.setButtonStyle("background-color: red; color: white; border-radius: 20px; font-weight: bold; padding: 10px;")
-                self.printTerminal("Controller connected.")
-            else:
-                self.printTerminal("No controller detected.")
-                self.setButtonStyle("background-color: grey; color: white; border-radius: 20px; font-weight: bold; padding: 10px;")
-    def setButtonStyle(self, style):
-        """
-        Sets the stylesheet of the connectControllerButton.
+    '''
 
-        INPUT:
-        - style: CSS-like stylesheet for the button
-        """
-        self.connectControllerButton.setStyleSheet(style)
-    def updateControllerState(self):
-        """
-        PURPOSE
-        Contains the functions to connect and read from the XBOX controller.
-        """
-        if self.controller:
-            pygame.event.pump()
-
-            # Dictionary to store the state of buttons and axes
-            controller_state = {
-                "buttons": {},
-                "axes": {}
-            }
-
-            # Mapping for button actions
-            direction_map = {
-                0: 'Up',  # A Button
-                1: 'Down',  # B Button
-                2: 'Left',  # X Button
-                3: 'Right',  # Y Button
-                4: 'Forward',  # LB
-                5: 'Backward',  # RB
-            }
-
-            current_direction = None
-
-            # Reading all button states
-            for button_id in range(self.controller.get_numbuttons()):
-                if self.controller.get_button(button_id):
-                    current_direction = direction_map.get(button_id)
-                    self.printTerminal(f"Button {button_id} pressed: Moving {current_direction}")
-
-                    if current_direction == 'Forward':
-                        self.printTerminal("Forward pressed")
-                        self.send_motor_command("start")
-
-                controller_state["buttons"][f"Button_{button_id}"] = self.controller.get_button(button_id)
-
-            # Reading all axis states (e.g., sticks and triggers)
-            for j in range(self.controller.get_numaxes()):
-                controller_state["axes"][f"Axis_{j}"] = round(self.controller.get_axis(j), 2)
-
-            #print(controller_state)
-            '''
-            axes = [self.controller.get_axis(i) for i in range(self.controller.get_numaxes())]
-            buttons = [self.controller.get_button(i) for i in range(self.controller.get_numbuttons())]
-            # Example: Print axis values and button states to the terminal
-            #print(f"Axes: {axes}")
-            #self.printTerminal(f"Axes: {axes}")
-            self.printTerminal(f"Buttons: {buttons}")
-            '''
-
+    '''
+        THRUSTER SETUP
+    '''
     def send_motor_command(self, command):
         """Send motor control commands to the Raspberry Pi."""
         if self.motor_socket:
@@ -398,6 +607,7 @@ class UIWINDOW(QMainWindow):
                 self.motor_socket.sendall(command.encode())
             except Exception as e:
                 print(f"Error sending motor command: {e}")
+
     def updateThrusterSpeeds(self):
         # Simulate thruster speed readings (replace with actual readings)
         for i in range(6):
@@ -407,6 +617,7 @@ class UIWINDOW(QMainWindow):
         # Simulate a thruster test (replace with actual test logic)
         print(f"Testing Thruster {thrusterId}")
         self.printTerminal(f"Testing Thruster {thrusterId}")
+
     def flashOnboardLED(self):
         """
         Executes a Python script on the Raspberry Pi to flash the onboard LED 3 times.
@@ -425,6 +636,193 @@ class UIWINDOW(QMainWindow):
         except Exception as e:
             self.logTerminal(f"Failed to flash LED: {str(e)}")
 
+    '''
+        CAMERA SETUP
+    '''
+    def toggleCameraConnection(self):
+        """
+            Toggles between connecting and disconnecting the camera to the GUI
+        """
+        if self.isConnected and self.video_feed_active is False:
+            self.connectToVideoServer()
+        elif self.video_feed_active and self.isConnected:
+            self.disconnectFromVideoServer()
+        else:
+            self.printTerminal("Connect to the ROV first")
+
+    def connectToVideoServer(self):
+        try:
+            # Start the video feed server
+            #stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
+            # Replace with the correct path to your file
+
+            # Print any errors from the server start
+            #print(stdout.read().decode())
+            #print(stderr.read().decode())
+
+            threading.Thread(target=self.update_frame).start()
+
+            self.printTerminal("Feed connected to video server")
+            self.video_feed_active = True
+
+            # Update style to show disconnection option
+            self.CameraConnectButton.setText("DISCONNECT")
+            self.CameraConnectButton.setStyleSheet("""
+                background-color: red;
+                color: white;
+                border-radius: 20px;
+                font-weight: bold;
+                padding: 10px;
+            """)
+        except Exception as e:
+            self.printTerminal(f"Error while connecting to video server:{e}.")
+            self.CameraConnectButton("""
+                background-color: grey;
+                color: white;
+                border-radius: 20px;
+                font-weight: bold;
+                padding: 10px;
+            """)
+
+    def disconnectFromVideoServer(self):
+        try:
+            response = requests.get(self.shutdown_url)
+            self.printTerminal(response.text)
+        except Exception as e:
+            self.printTerminal(f"Error shutting down the video server gracefully: {e}")
+
+            # If the graceful shutdown fails, kill the process
+            self.printTerminal("Attempting to kill the process directly...")
+            stdin, stdout, stderr = self.ssh_client.exec_command('pgrep -f video_feed.py')
+            pid = stdout.read().strip()
+
+            if pid:
+                # Kill the process using the PID
+                kill_command = f'kill {pid}'
+                self.ssh_client.exec_command(kill_command)
+                self.printTerminal(f"Video feed process with PID {pid} has been killed.")
+            else:
+                self.printTerminal("No process found for video_feed.py")
+        finally:
+            self.printTerminal("Disconnected from video server.")
+            self.CameraConnectButton("""
+                background-color: green;
+                color: white;
+                border-radius: 20px;
+                font-weight: bold;
+                padding: 10px;
+            """)
+
+    def update_frame(self):
+        # Fetch the video frame from the Flask server
+        try:
+            img_resp = requests.get(self.video_url, stream=True)
+            bytes_data = b""
+            for chunk in img_resp.iter_content(chunk_size=1024):
+                bytes_data += chunk
+                a = bytes_data.find(b'\xff\xd8')  # JPEG start
+                b = bytes_data.find(b'\xff\xd9')  # JPEG end
+                if a != -1 and b != -1:
+                    jpg = bytes_data[a:b + 2]
+                    bytes_data = bytes_data[b + 2:]
+                    frame = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                    self.display_image(frame)
+        except Exception as e:
+            print(f"Error fetching video stream: {e}")
+
+    def display_image(self, frame):
+        # Convert the frame to a format QPixmap can handle
+        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_image.shape
+        bytes_per_line = ch * w
+        qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+
+        # Update the QLabel with the new frame
+        pixmap = QPixmap.fromImage(qt_image)
+        # Resize the QPixmap to fit the QLabel while maintaining the aspect ratio
+        pixmap = pixmap.scaled(self.video_label.size(), Qt.KeepAspectRatio)
+
+        # Display the QPixmap on the QLabel
+        self.video_label.setPixmap(pixmap)
+
+    def toggleSensorConnection(self):
+        """
+            Toggles between connecting and disconnecting the sensors to the GUI
+        """
+        if self.isConnected:
+            self.connectToSensor()
+        else:
+            self.printTerminal("Connect to the ROV first")
+        '''
+                if self.isConnected and self.sensors_socket is not None:
+            self.connectToSensor()
+        elif self.sensors_socket is not None and self.isConnected:
+            self.disconnectFromSensor()
+        else:
+            self.printTerminal("Connect to the ROV first")
+        '''
+
+
+    def connectToSensor(self):
+        try:
+            # Start the sensors program
+            #stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/sensors.py')
+            # Replace with the correct path to your file
+
+            # Print any errors from the server start
+            #print(stdout.read().decode())
+            #print(stderr.read().decode())
+
+            #self.sensors_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            #self.sensors_socket.connect(('192.168.16.104', 8487))  # Pi's IP address and port
+
+            threading.Thread(target=self.handle_sensors).start()
+
+            self.printTerminal("Sensors connected")
+
+            # Update style to show disconnection option
+            self.SensorConnectButton.setText("DISCONNECT")
+            self.SensorConnectButton.setStyleSheet("""
+                background-color: red;
+                color: white;
+                border-radius: 20px;
+                font-weight: bold;
+                padding: 10px;
+            """)
+        except Exception as e:
+            self.printTerminal(f"Error while connecting to sensors.:{e}")
+            self.SensorConnectButton("""
+                background-color: grey;
+                color: white;
+                border-radius: 20px;
+                font-weight: bold;
+                padding: 10px;
+            """)
+
+    def disconnectFromSensor(self):
+        try:
+            stdin, stdout, stderr = self.ssh_client.exec_command('pgrep -f sensors.py')
+            pid = stdout.read().strip()
+
+            if pid:
+                # Kill the process using the PID
+                kill_command = f'kill {pid}'
+                self.ssh_client.exec_command(kill_command)
+                self.printTerminal("Sensors program ended.")
+                self.SensorConnectButton.setText("CONNECT")
+                self.SensorConnectButton("""
+                    background-color: green;
+                    color: white;
+                    border-radius: 20px;
+                    font-weight: bold;
+                    padding: 10px;
+                """)
+            else:
+                print("No process found for sensors.py")
+        except Exception as e:
+            self.printTerminal(f"Error stopping sensors program: {e}")
+        finally:
+            self.printTerminal("Sensors disconnected.")
 
 def initiateGUI():
     """
