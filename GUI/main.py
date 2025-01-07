@@ -67,21 +67,7 @@ class UIWINDOW(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateControllerState)
         self.timer.start(50)  # Check every 50 milliseconds
-        '''
-                pygame.init()
-        pygame.joystick.init()
-        self.controller = None
-        if pygame.joystick.get_count() > 0:
-            self.controller = pygame.joystick.Joystick(0)
-            self.controller.init()
 
-        # Track button states
-        self.prev_button_states = []
-        # Set up a timer to check the controller state
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.updateControllerState)
-        self.timer.start(50)  # Check every 50 milliseconds
-        '''
         # INITIAL STARTUP MESSAGE
         self.printTerminal("Welcome to the control interface.")
         self.printTerminal("Connect to the ROV and CONTROLLER to get started.")
@@ -99,11 +85,12 @@ class UIWINDOW(QMainWindow):
             Initiates buttons and their slots.
         """
         # Serial connection to the Raspberry PI setup
-        self.isConnected =  False
-        self.ssh_client =   None
-        self.pi_hostname =  'raspberrypi.local'  # Replace with your Raspberry Pi's IP
-        self.username =     'sammy'  # Raspberry Pi username
-        self.password =     'password'  # Raspberry Pi password
+        self.isConnected = False
+        self.ssh_client = None
+        self.pi_hostname = 'raspberrypi.local'  # Replace with your Raspberry Pi's IP
+        self.username = 'sammy'  # Raspberry Pi username
+        self.password = 'password'  # Raspberry Pi password
+        self.ip_addr = '192.168.115.17' # Ip Address connection
 
         '''
             UTIL SETUP
@@ -172,16 +159,10 @@ class UIWINDOW(QMainWindow):
         self.timer.start(60)  # Update every 30 ms (~30 FPS)
 
         # Flask video stream URLs
-        self.video_url = "http://192.168.16.104:5001/video_feed"  # Replace with your Flask server IP
-        self.shutdown_url = "http://192.168.16.104:5001/shutdown"  # Replace with your Flask server IP
+        self.video_url = f"http://{self.ip_addr}:5001/video_feed"  # Replace with your Flask server IP
+        self.shutdown_url = f"http://{self.ip_addr}:5001/shutdown"  # Replace with your Flask server IP
 
         self.video_feed_active=False
-        '''
-            self.camera_active = False
-            self.stream_url = 'http://192.168.16.104:5001/video_feed'
-            self.videoFeedLabel = self.findChild(QLabel, 'videoFeedLabel')
-        '''
-
         '''
             SENSORS SETUP
         '''
@@ -257,23 +238,34 @@ class UIWINDOW(QMainWindow):
                 self.isConnected = True
                 self.printTerminal("Connected to ROV over SSH")
                 # Video Feed
-                '''
-                    self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
-                '''
+
+                # self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
+
                 # THRUSTERS
 
-                self.ssh_client.exec_command('python3 /home/sammy/ROV/thruster.py')
+                stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/thruster.py')
+                combined_output = stdout.read().decode('utf-8')
+                print(combined_output)
 
                 threading.Thread(target=self.updateControllerState).start()
 
                 self.motor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.motor_socket.connect(('192.168.1.2', 8486))  # Pi's IP address and port
+                self.motor_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                self.motor_socket.connect((self.ip_addr, 8486))  # Pi's IP address and port
 
                 # SENSORS
-                self.ssh_client.exec_command('python3 /home/sammy/ROV/sensors.py')
+                # self.ssh_client.exec_command('python3 /home/sammy/ROV/sensors.py')
+                #
+                # stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/thruster.py')
+                # combined_output = stdout.read().decode('utf-8')
+                # print(combined_output)
+                #
+                # self.sensors_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                # self.sensors_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                # self.sensors_socket.connect((self.ip_addr, 8487))  # Pi's IP address and port
 
-                self.sensors_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.sensors_socket.connect(('192.168.1.2', 8487))  # Pi's IP address and port
+                # self.sensors_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                # self.sensors_socket.connect((self.ip_addr, 8487))  # Pi's IP address and port
 
                 # Update button style to show disconnection option
                 self.rovConnectButton.setText("DISCONNECT")
@@ -293,39 +285,7 @@ class UIWINDOW(QMainWindow):
                     font-weight: bold;
                     padding: 10px;
                 """)
-
-            '''
-
-
-            self.sensors_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sensors_socket.connect(('192.168.16.104', 8487))  # Pi's IP address and port
-
-            threading.Thread(target=self.handle_sensors).start()
-            
-            # Start the video feed server
-            stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
-            # Replace with the correct path to your file
-
-            # Print any errors from the server start
-            print(stdout.read().decode())
-            print(stderr.read().decode())
-
-            threading.Thread(target=self.update_frame).start()
-            #self.update_frame()
-
-            # Update button style to show disconnection option
-            self.rovConnectButton.setText("DISCONNECT")
-            self.rovConnectButton.setStyleSheet("""
-                background-color: red;
-                color: white;
-                border-radius: 20px;
-                font-weight: bold;
-                padding: 10px;
-            """)
-
             # Camera
-            
-            '''
         except Exception as e:
             self.ssh_client.close()
             self.printTerminal(f"Failed to connect to ROV over SSH: {e}")
@@ -452,7 +412,7 @@ class UIWINDOW(QMainWindow):
     def updateControllerState(self):
         """
         PURPOSE
-            Contains the functions to read input from the XBOX controller.
+            Read input from XBOX controller with left stick for speed control and buttons for direction control.
         """
         if self.controller:
             pygame.event.pump()
@@ -462,6 +422,54 @@ class UIWINDOW(QMainWindow):
                 "buttons": {},
                 "axes": {}
             }
+
+            # Get the left stick Y-axis value for speed control
+            speed_axis = round(self.controller.get_axis(1), 2)  # Left stick Y-axis
+            # Convert axis value (-1 to 1) to speed percentage (0 to 100) ; Adding deadzone of 0.1
+            if abs(speed_axis) > 0.1:
+                speed = int(speed_axis * 100)  # Using absolute value for speed
+            else:
+                speed = 0
+
+            # Mapping for motor direction controls: These signify the placement of the motors on the ROV
+            motor_map = {
+                0: f'top:speed:{speed}',  # A Button - Top motor forward
+                1: f'top:speed:{-speed}',  # B Button - Top motor reverse
+                2: f'rear:speed:{speed}',  # X Button - Rear motor forward
+                3: f'rear:speed:{-speed}',  # Y Button - Rear motor reverse
+                4: f'left:speed:{speed}',  # LB - Left motor forward
+                5: f'right:speed:{speed}',  # RB - Right motor forward
+                6: f'left:speed:{-speed}',  # Back - Left motor reverse
+                7: f'right:speed:{-speed}',  # Start - Right motor reverse
+            }
+
+            # Emergency stop mapping
+            stop_map = {
+                10: 'STOP_ALL'  # Xbox Button - Emergency stop all motors
+            }
+
+            # Reading all button states
+            for button_id in range(self.controller.get_numbuttons()):
+                if self.controller.get_button(button_id):
+                    # Check for motor commands
+                    if button_id in motor_map:
+                        command = motor_map[button_id]
+                        current_motor = command.split(':')[0]  # Extract motor name
+                        direction = "forward" if ':speed:' in command and '-' not in command else "reverse"
+                        self.printTerminal(f"{current_motor} motor: {direction} at {speed}%")
+                        self.send_motor_command(command)
+
+                    # Check for emergency stop
+                    elif button_id in stop_map:
+                        command = stop_map[button_id]
+                        self.printTerminal("EMERGENCY STOP")
+                        self.send_motor_command(command)
+
+                controller_state["buttons"][f"Button_{button_id}"] = self.controller.get_button(button_id)
+        '''
+            # Store axis states for monitoring
+            for axis_id in range(self.controller.get_numaxes()):
+                controller_state["axes"][f"Axis_{axis_id}"] = round(self.controller.get_axis(axis_id), 2)
 
             # Mapping for button actions
             direction_map = {
@@ -490,7 +498,7 @@ class UIWINDOW(QMainWindow):
                 controller_state["axes"][f"Axis_{j}"] = round(self.controller.get_axis(j), 2)
 
             #print(controller_state)
-
+        '''
     '''
         SENSORS SETUP
     '''
@@ -605,8 +613,12 @@ class UIWINDOW(QMainWindow):
         if self.motor_socket:
             try:
                 self.motor_socket.sendall(command.encode())
-            except Exception as e:
+            except socket.error as e:
                 print(f"Error sending motor command: {e}")
+
+    def stop_all_motors(self):
+        """Emergency stop function for all motors"""
+        self.send_motor_command("STOP_ALL")
 
     def updateThrusterSpeeds(self):
         # Simulate thruster speed readings (replace with actual readings)
@@ -653,12 +665,12 @@ class UIWINDOW(QMainWindow):
     def connectToVideoServer(self):
         try:
             # Start the video feed server
-            #stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
+            stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
             # Replace with the correct path to your file
 
             # Print any errors from the server start
-            #print(stdout.read().decode())
-            #print(stderr.read().decode())
+            print(stdout.read().decode())
+            print(stderr.read().decode())
 
             threading.Thread(target=self.update_frame).start()
 
@@ -766,15 +778,15 @@ class UIWINDOW(QMainWindow):
     def connectToSensor(self):
         try:
             # Start the sensors program
-            #stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/sensors.py')
-            # Replace with the correct path to your file
+            self.ssh_client.exec_command('python3 /home/sammy/ROV/sensors.py')
 
-            # Print any errors from the server start
-            #print(stdout.read().decode())
-            #print(stderr.read().decode())
+            stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/sensors.py')
+            combined_output = stdout.read().decode('utf-8')
+            print(combined_output)
 
-            #self.sensors_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            #self.sensors_socket.connect(('192.168.16.104', 8487))  # Pi's IP address and port
+            self.sensors_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sensors_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.sensors_socket.connect((self.ip_addr, 8487))  # Pi's IP address and port
 
             threading.Thread(target=self.handle_sensors).start()
 

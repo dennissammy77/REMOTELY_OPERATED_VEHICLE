@@ -64,7 +64,7 @@ def handle_client(client_socket):
 
 def sensors_setup():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('192.168.1.2', 8487))
+    server_socket.bind(('0.0.0.0', 8487))
     server_socket.listen(5)
     print("Sensors server connected")
 
