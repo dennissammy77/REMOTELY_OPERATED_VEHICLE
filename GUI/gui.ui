@@ -364,124 +364,124 @@
                                     </item>
 
                                     <!-- Row 3: Thruster 3 -->
-                                    <item row="4" column="0">
-                                        <widget class="QLabel" name="thruster3LabelTitle">
-                                            <property name="text">
-                                                <string>Thruster 3</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="5" column="0">
-                                        <widget class="QLabel" name="thruster3SpeedLabel">
-                                            <property name="text">
-                                                <string>0 RPM</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="4" column="1">
-                                        <widget class="QPushButton" name="thruster3TestButton">
-                                            <property name="text">
-                                                <string>Test Thruster 3</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="5" column="1">
-                                        <widget class="QLabel" name="thruster3StatusLabel">
-                                            <property name="text">
-                                                <string>Status: Unknown</string>
-                                            </property>
-                                        </widget>
-                                    </item>
+<!--                                    <item row="4" column="0">-->
+<!--                                        <widget class="QLabel" name="thruster3LabelTitle">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Thruster 3</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="5" column="0">-->
+<!--                                        <widget class="QLabel" name="thruster3SpeedLabel">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>0 RPM</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="4" column="1">-->
+<!--                                        <widget class="QPushButton" name="thruster3TestButton">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Test Thruster 3</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="5" column="1">-->
+<!--                                        <widget class="QLabel" name="thruster3StatusLabel">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Status: Unknown</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
 
-                                    <!-- Row 4: Thruster 4 -->
-                                    <item row="6" column="0">
-                                        <widget class="QLabel" name="thruster4LabelTitle">
-                                            <property name="text">
-                                                <string>Thruster 4</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="7" column="0">
-                                        <widget class="QLabel" name="thruster4SpeedLabel">
-                                            <property name="text">
-                                                <string>0 RPM</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="6" column="1">
-                                        <widget class="QPushButton" name="thruster4TestButton">
-                                            <property name="text">
-                                                <string>Test Thruster 4</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="7" column="1">
-                                        <widget class="QLabel" name="thruster4StatusLabel">
-                                            <property name="text">
-                                                <string>Status: Unknown</string>
-                                            </property>
-                                        </widget>
-                                    </item>
+<!--                                    &lt;!&ndash; Row 4: Thruster 4 &ndash;&gt;-->
+<!--                                    <item row="6" column="0">-->
+<!--                                        <widget class="QLabel" name="thruster4LabelTitle">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Thruster 4</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="7" column="0">-->
+<!--                                        <widget class="QLabel" name="thruster4SpeedLabel">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>0 RPM</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="6" column="1">-->
+<!--                                        <widget class="QPushButton" name="thruster4TestButton">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Test Thruster 4</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="7" column="1">-->
+<!--                                        <widget class="QLabel" name="thruster4StatusLabel">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Status: Unknown</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
 
-                                    <!-- Row 5: Thruster 5 -->
-                                    <item row="8" column="0">
-                                        <widget class="QLabel" name="thruster5LabelTitle">
-                                            <property name="text">
-                                                <string>Thruster 5</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="9" column="0">
-                                        <widget class="QLabel" name="thruster5SpeedLabel">
-                                            <property name="text">
-                                                <string>0 RPM</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="8" column="1">
-                                        <widget class="QPushButton" name="thruster5TestButton">
-                                            <property name="text">
-                                                <string>Test Thruster 5</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="9" column="1">
-                                        <widget class="QLabel" name="thruster5StatusLabel">
-                                            <property name="text">
-                                                <string>Status: Unknown</string>
-                                            </property>
-                                        </widget>
-                                    </item>
+<!--                                    &lt;!&ndash; Row 5: Thruster 5 &ndash;&gt;-->
+<!--                                    <item row="8" column="0">-->
+<!--                                        <widget class="QLabel" name="thruster5LabelTitle">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Thruster 5</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="9" column="0">-->
+<!--                                        <widget class="QLabel" name="thruster5SpeedLabel">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>0 RPM</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="8" column="1">-->
+<!--                                        <widget class="QPushButton" name="thruster5TestButton">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Test Thruster 5</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="9" column="1">-->
+<!--                                        <widget class="QLabel" name="thruster5StatusLabel">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Status: Unknown</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
 
-                                    <!-- Row 6: Thruster 6 -->
-                                    <item row="10" column="0">
-                                        <widget class="QLabel" name="thruster6LabelTitle">
-                                            <property name="text">
-                                                <string>Thruster 6</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="11" column="0">
-                                        <widget class="QLabel" name="thruster6SpeedLabel">
-                                            <property name="text">
-                                                <string>0 RPM</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="10" column="1">
-                                        <widget class="QPushButton" name="thruster6TestButton">
-                                            <property name="text">
-                                                <string>Test Thruster 6</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item row="11" column="1">
-                                        <widget class="QLabel" name="thruster6StatusLabel">
-                                            <property name="text">
-                                                <string>Status: Unknown</string>
-                                            </property>
-                                        </widget>
-                                    </item>
+<!--                                    &lt;!&ndash; Row 6: Thruster 6 &ndash;&gt;-->
+<!--                                    <item row="10" column="0">-->
+<!--                                        <widget class="QLabel" name="thruster6LabelTitle">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Thruster 6</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="11" column="0">-->
+<!--                                        <widget class="QLabel" name="thruster6SpeedLabel">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>0 RPM</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="10" column="1">-->
+<!--                                        <widget class="QPushButton" name="thruster6TestButton">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Test Thruster 6</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
+<!--                                    <item row="11" column="1">-->
+<!--                                        <widget class="QLabel" name="thruster6StatusLabel">-->
+<!--                                            <property name="text">-->
+<!--                                                <string>Status: Unknown</string>-->
+<!--                                            </property>-->
+<!--                                        </widget>-->
+<!--                                    </item>-->
 
                                 </layout>
                             </widget>

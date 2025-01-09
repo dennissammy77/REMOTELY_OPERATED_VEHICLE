@@ -72,11 +72,11 @@ class ESCController:
 
         if speed_percent >= 0:
             # Forward speed (positive values)
-            pulse_width = self.min_pulse + (speed_percent / 100)
+            pulse_width = self.min_pulse + (pulse_range * speed_percent / 100)
             print('pulse_width_FR', pulse_width)
         else:
             # Reverse speed (negative values)
-            pulse_width = self.min_pulse - (abs_speed / 100)
+            pulse_width = self.min_pulse - (pulse_range * abs_speed / 100)
             print('pulse_width_RV', pulse_width)
 
         duty_cycle = self.pulse_to_duty(pulse_width)
@@ -167,6 +167,7 @@ def thruster_setup():
 
     # Setup socket server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(('0.0.0.0', 8486))
     #server_socket.bind(('192.168.201.17', 8486))
     server_socket.listen(5)

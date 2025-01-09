@@ -1,4 +1,3 @@
-
 try:
     import os, sys
     import io
@@ -87,10 +86,11 @@ class UIWINDOW(QMainWindow):
         # Serial connection to the Raspberry PI setup
         self.isConnected = False
         self.ssh_client = None
+        self.video_thread = None
         self.pi_hostname = 'raspberrypi.local'  # Replace with your Raspberry Pi's IP
         self.username = 'sammy'  # Raspberry Pi username
         self.password = 'password'  # Raspberry Pi password
-        self.ip_addr = '192.168.115.17' # Ip Address connection
+        self.ip_addr = '192.168.55.17' # Ip Address connection
 
         '''
             UTIL SETUP
@@ -126,19 +126,19 @@ class UIWINDOW(QMainWindow):
         self.client_socket = None
         self.motor_socket = None
         # Find the thruster labels and buttons
-        self.thrusterSpeedLabels = [
-            self.findChild(QLabel, f'thruster{i}SpeedLabel') for i in range(1, 7)
-        ]
-        self.thrusterTestButtons = [
-            self.findChild(QPushButton, f'thruster{i}TestButton') for i in range(1, 7)
-        ]
-        self.thrusterStatusLabels = [
-            self.findChild(QLabel, f'thruster{i}StatusLabel') for i in range(1, 7)
-        ]
-
-        # Connect buttons to their functions
-        for i, button in enumerate(self.thrusterTestButtons):
-            button.clicked.connect(lambda _, x=i + 1: self.testThruster(x))
+        # self.thrusterSpeedLabels = [
+        #     self.findChild(QLabel, f'thruster{i}SpeedLabel') for i in range(1, 7)
+        # ]
+        # self.thrusterTestButtons = [
+        #     self.findChild(QPushButton, f'thruster{i}TestButton') for i in range(1, 7)
+        # ]
+        # self.thrusterStatusLabels = [
+        #     self.findChild(QLabel, f'thruster{i}StatusLabel') for i in range(1, 7)
+        # ]
+        #
+        # # Connect buttons to their functions
+        # for i, button in enumerate(self.thrusterTestButtons):
+        #     button.clicked.connect(lambda _, x=i + 1: self.testThruster(x))
 
         '''
             CAMERA SETUP
@@ -159,8 +159,10 @@ class UIWINDOW(QMainWindow):
         self.timer.start(60)  # Update every 30 ms (~30 FPS)
 
         # Flask video stream URLs
-        self.video_url = f"http://{self.ip_addr}:5001/video_feed"  # Replace with your Flask server IP
-        self.shutdown_url = f"http://{self.ip_addr}:5001/shutdown"  # Replace with your Flask server IP
+        self.video_url = f"http://{self.ip_addr}:5001/video_feed"
+        self.shutdown_url = f"http://{self.ip_addr}:5001/shutdown"
+        self.start_stream = f"http://{self.ip_addr}:5001/start_stream"
+        self.stop_stream = f"http://{self.ip_addr}:5001/stop_stream"
 
         self.video_feed_active=False
         '''
@@ -215,6 +217,21 @@ class UIWINDOW(QMainWindow):
     '''
         SYSTEM SETUP
     '''
+    def setup_ssh_connection(self):
+        """
+            Establishes an SSH connection to the Raspberry Pi using its hostname over Ethernet.
+        """
+        try:
+            # Create SSH Client && Establish the serial connection
+            self.ssh_client = paramiko.SSHClient()
+            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            self.ssh_client.connect(self.pi_hostname,
+                                    username=self.username,
+                                    password=self.password)
+            self.printTerminal("Connected to ROV over SSH")
+            self.isConnected = True
+        except Exception as e:
+            print(f"SSH connection failed: {e}")
     def toggleROVConnection(self):
         """
             Toggles between connecting and disconnecting the Raspberry Pi to the GUI over Ethernet.
@@ -237,15 +254,20 @@ class UIWINDOW(QMainWindow):
 
                 self.isConnected = True
                 self.printTerminal("Connected to ROV over SSH")
-                # Video Feed
+                # Run Video Feed on startup
 
                 # self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
+                video_stdin, video_stdout, video_stderr = self.ssh_client.exec_command(
+                    'python3 /home/sammy/ROV/video_feed.py')
+                video_combined_output = video_stdout.read().decode('utf-8')
+                self.printTerminal(video_combined_output)
+                print(video_combined_output)
 
                 # THRUSTERS
 
-                stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/thruster.py')
-                combined_output = stdout.read().decode('utf-8')
-                print(combined_output)
+                # stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/thruster.py')
+                #combined_output = stdout.read().decode('utf-8')
+                #print(combined_output)
 
                 threading.Thread(target=self.updateControllerState).start()
 
@@ -625,6 +647,7 @@ class UIWINDOW(QMainWindow):
         for i in range(6):
             speed = random.uniform(0.0, 100.0)  # Replace with actual speed reading
             self.thrusterSpeedLabels[i].setText(f"{speed:.2f} RPM")
+
     def testThruster(self, thrusterId):
         # Simulate a thruster test (replace with actual test logic)
         print(f"Testing Thruster {thrusterId}")
@@ -666,6 +689,7 @@ class UIWINDOW(QMainWindow):
         try:
             # Start the video feed server
             stdin, stdout, stderr = self.ssh_client.exec_command('python3 /home/sammy/ROV/video_feed.py')
+
             # Replace with the correct path to your file
 
             # Print any errors from the server start

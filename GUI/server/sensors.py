@@ -4,6 +4,7 @@ import socket
 import threading
 import json
 import math
+import sys
 
 # Create a new Mpu6050 object
 mpu6050 = mpu6050(0x68)
@@ -64,6 +65,7 @@ def handle_client(client_socket):
 
 def sensors_setup():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(('0.0.0.0', 8487))
     server_socket.listen(5)
     print("Sensors server connected")
@@ -77,4 +79,3 @@ def sensors_setup():
 # Command line execution
 if __name__ == '__main__':
     sensors_setup()
-
