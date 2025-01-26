@@ -23,7 +23,7 @@ class ESCController:
         self.pwm.start(0)
 
         # Calibrate ESC
-        self.calibrate()
+        #self.calibrate()
 
     def calibrate(self):
         # try:
@@ -44,10 +44,12 @@ class ESCController:
 
         print(f"Calibrating {self.motor_name} ESC...")
         duty_cycle = self.pulse_to_duty(self.min_pulse)
-        self.pwm.ChangeDutyCycle(5)
-        # self.pwm.ChangeDutyCycle(duty_cycle)
-        # self.pwm.ChangeDutyCycle(0)
-        sleep(2)
+
+        #self.pwm.ChangeDutyCycle(5)
+        self.pwm.ChangeDutyCycle(duty_cycle)
+        duty_cycle = self.pulse_to_duty(self.max_pulse)
+        self.pwm.ChangeDutyCycle(duty_cycle)
+        self.pwm.ChangeDutyCycle(0)
         print(f"{self.motor_name} ESC calibrated")
 
     def pulse_to_duty(self, pulse_width):
@@ -66,7 +68,6 @@ class ESCController:
         neutral_pulse = (self.max_pulse + self.min_pulse) / 2
 
         # Calculate pulse width
-        # pulse_range = self.max_pulse - self.min_pulse
         print('pulse_range',pulse_range)
         print('speed_percent', speed_percent)
 
@@ -76,7 +77,8 @@ class ESCController:
             print('pulse_width_FR', pulse_width)
         else:
             # Reverse speed (negative values)
-            pulse_width = self.min_pulse - (pulse_range * abs_speed / 100)
+            #pulse_width = self.min_pulse - (pulse_range * abs_speed / 100)
+            pulse_width = 0
             print('pulse_width_RV', pulse_width)
 
         duty_cycle = self.pulse_to_duty(pulse_width)
@@ -89,7 +91,7 @@ class MotorController:
         # Define motor configurations with GPIO pins
         motor_configs = {
             'top': {'pin': 12, 'name': 'Top Motor'},
-            'rear': {'pin': 22, 'name': 'Rear Motor'},
+            'rear': {'pin': 16, 'name': 'Rear Motor'},
             'left': {'pin': 11, 'name': 'Left Motor'},
             'right': {'pin': 13, 'name': 'Right Motor'}
         }
@@ -169,7 +171,6 @@ def thruster_setup():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(('0.0.0.0', 8486))
-    #server_socket.bind(('192.168.201.17', 8486))
     server_socket.listen(5)
     print("Multi-motor thruster control server listening")
 
@@ -184,6 +185,8 @@ def thruster_setup():
             client_handler.start()
     except KeyboardInterrupt:
         print("\nShutting down server...")
+    except Exception as e:
+        print(f"Error Occured: {e}")
     finally:
         controller.stop_all()
         server_socket.close()
