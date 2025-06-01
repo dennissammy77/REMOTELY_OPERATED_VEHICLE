@@ -3,40 +3,109 @@ import time
 import pygame
 import requests
 import socket
+from PyQt5.QtCore import QThread
+from client.ssh_connection import SSHWorker
 
 class THRUSTER_HANDLER():
-    def __init__(self, ssh_conn, logger):
+    def __init__(self, ssh_conn, logger, ip_addr):
         super().__init__()
         self.ssh_conn = ssh_conn
         self.logger = logger
 
-        self.ip_addr = '192.168.55.17'  # Ip Address connection
+        self.ip_addr = ip_addr  # Ip Address connection
         self.ip_port = 8486  # Ip Address connection
         self.motor_socket = None
         self.controller = None
 
+        self.thread = None
+        self.worker = None
+
     def initialize(self):
         try:
-            # Execute the video feed script
-            # stdin, stdout, stderr = (
-            self.ssh_conn.execute_command('python3 /home/sammy/ROV/thruster.py')
-            # combined_output = stdout.read().decode('utf-8')
-            # print(combined_output)
+            # Execute the script
+            # self.ssh_conn.execute_command('python3 /home/sammy/ROV/thruster.py')
+            # Start the SSH command in a separate thread
+            self.worker = SSHWorker(self.ssh_conn, 'python3 /home/sammy/ROV/thruster.py', self.logger)
+            self.thread = QThread()
+            self.worker.moveToThread(self.thread)
 
+            self.worker.finished.connect(self.thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.thread.finished.connect(self.thread.deleteLater)
+            self.worker.error.connect(self.logger.log)
+            self.worker.progress.connect(self.logger.log)
+
+            self.thread.started.connect(self.worker.run)
+            self.thread.start()
+
+            # Add a small delay to ensure the server is up
+            time.sleep(2)
+
+            # self.motor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # print(self.motor_socket)
+            # self.motor_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # print(self.ip_addr)
+            # print(self.ip_port)
+            # self.motor_socket.connect((self.ip_addr, self.ip_port))
+
+
+            #threading.Thread(target=self.updateControllerState).start()
             self.motor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print(f"Attempting to connect to {self.ip_addr}:{self.ip_port}")
+
             self.motor_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.motor_socket.connect((self.ip_addr, self.ip_port))
-            print(f"Thruster Initialized")
 
-            threading.Thread(target=self.updateControllerState).start()
-            print(f"Thruster Initialized again")
-            pygame.init()
-            pygame.joystick.init()
-            self.controller = pygame.joystick.Joystick(0)
-            self.controller.init()
-
+            try:
+                # Add a timeout to prevent hanging
+                self.motor_socket.settimeout(5)
+                self.motor_socket.connect((self.ip_addr, self.ip_port))
+                print("Socket connection successful")
+                self.logger.log(f"Controller connection [initialize]: Success")
+                pygame.init()
+                pygame.joystick.init()
+                self.controller = pygame.joystick.Joystick(0)
+                self.controller.init()
+            except socket.timeout:
+                print("Connection timed out")
+                raise
+            except ConnectionRefusedError as conn_refuse:
+                print(f"Detailed connection refused error: {conn_refuse}")
+                # Additional debugging
+                # self._check_server_status()
+                raise
+            # self.logger.log(f"Controller connection [initialize]: Success")
+            # pygame.init()
+            # pygame.joystick.init()
+            # self.controller = pygame.joystick.Joystick(0)
+            # self.controller.init()
+        except ConnectionRefusedError as e:
+            print(f"Connection refused: {e}")
         except Exception as e:
-            print(f"Thruster Error: {str(e)}")
+            self.logger.log(f"Controller connection [initialize]: {str(e)}")
+            self.logger.printTerminal(f"Controller connection [initialize]: {str(e)}")
+            raise Exception("Controller connection [initialize]")
+
+    def disconnect_controller(self):
+        """Kill the thruster.py script running on the Raspberry Pi."""
+        try:
+            # Find and kill the process running thruster.py
+            find_command = "ps aux | grep '[t]hruster.py' | awk '{print $2}'"
+            pid = self.ssh_conn.execute_command(find_command)
+            #print(stdout)
+            #pid = stdout.read().decode().strip()  # Get the process ID
+
+            if pid:
+                kill_command = f"kill -9 {pid}"
+                self.ssh_conn.execute_command(kill_command)
+                self.logger.log(f"Controller connection [disconnect_controller] (PID {pid}) has been terminated.")
+
+            pygame.joystick.quit()
+            pygame.quit()
+            self.controller = None
+        except Exception as e:
+            self.logger.log(f"Controller connection [disconnect_controller]: {str(e)}")
+            self.logger.printTerminal(f"Controller connection [disconnect_controller]: {str(e)}")
+            raise Exception("Controller connection [disconnect_controller]")
 
     def updateControllerState(self):
         """
@@ -45,7 +114,7 @@ class THRUSTER_HANDLER():
         """
         try:
             if self.controller:
-                pygame.event.pump()
+                #pygame.event.pump()
 
                 # Dictionary to store the state of buttons and axes
                 controller_state = {
@@ -97,17 +166,45 @@ class THRUSTER_HANDLER():
 
                     controller_state["buttons"][f"Button_{button_id}"] = self.controller.get_button(button_id)
         except Exception as e:
-            print(f"Error in updateControllerState: {e}")
+            self.logger.log(f"Controller connection [updateControllerState]: {e}")
+            self.logger.printTerminal(f"Controller connection [updateControllerState]: {e}")
+            raise Exception("Controller connection [updateControllerState]")
+
 
     def send_motor_command(self, command):
         """Send motor control commands to the Raspberry Pi."""
         if self.motor_socket:
-            print(f"motor socket: {self.motor_socket}")
+            #self.logger.log(f"motor socket: {self.motor_socket}")
             try:
                 self.motor_socket.sendall(command.encode())
             except socket.error as e:
-                print(f"Error sending motor command: {e}")
+                self.logger.printTerminal(f"Controller connection [send_motor_command]: {e}")
+                self.logger.log(f"Controller connection [send_motor_command]: {e}")
+                raise Exception("Controller connection [send_motor_command]")
 
     def stop_all_motors(self):
         """Emergency stop function for all motors"""
         self.send_motor_command("STOP_ALL")
+
+
+"""
+Debugging: 
+1. check if the server script is running:
+ps aux | grep thruster.py
+2. Verify the listening port:
+sudo netstat -tuln | grep <your_port>
+3. stop the process, use the kill command with the process ID
+sudo kill -9 <pid>
+4. To find and kill all instances of a specific script, you can use:
+pkill -f thruster.py
+5. Brute Forcing
+# List all Python processes running the script
+pgrep -f "python3.*thruster.py"
+
+# Kill all Python processes running the script
+pkill -f "python3.*thruster.py"
+
+# If that doesn't work, use more forceful method
+sudo pkill -9 -f "python3.*thruster.py"
+
+"""

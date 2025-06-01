@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 import time
 import requests
+from client.ssh_connection import SSHWorker
 
 class VideoFeedThread(QThread):
 
@@ -8,7 +9,7 @@ class VideoFeedThread(QThread):
     stdout_signal = pyqtSignal(str)  # Signal to emit stdout messages
     stderr_signal = pyqtSignal(str)  # Signal to emit stderr messages
 
-    def __init__(self, ssh_conn, logger):
+    def __init__(self, ssh_conn, logger, ip_addr):
         super().__init__()
         self.ssh_conn = ssh_conn
         self.video_feed_initialized = False
@@ -18,7 +19,7 @@ class VideoFeedThread(QThread):
         self.stdin = None
         self.stdout = None
         self.stderr = None
-        self.ip_addr = '192.168.55.17'  # Ip Address connection
+        self.ip_addr = ip_addr  # Ip Address connection
         # Flask video stream URLs
         self.video_url = f"http://{self.ip_addr}:5001/video_feed"
         self.shutdown_url = f"http://{self.ip_addr}:5001/shutdown"
@@ -27,12 +28,28 @@ class VideoFeedThread(QThread):
         # sudo fuser -v /dev/video0
         # sudo fuser -k /dev/video0
 
+        self.thread = None
+        self.worker = None
+
     def initialize(self):
         try:
             # Execute the video feed script
-            self.stdin, self.stdout, self.stderr = self.ssh_conn.execute_command(
-                'python3 /home/sammy/ROV/video_feed.py'
-            )
+            # self.stdin, self.stdout, self.stderr = self.ssh_conn.execute_command(
+            #     'python3 /home/sammy/ROV/video_feed.py'
+            # )
+            self.worker = SSHWorker(self.ssh_conn, 'python3 /home/sammy/ROV/video_feed.py', self.logger)
+            self.thread = QThread()
+            self.worker.moveToThread(self.thread)
+
+            self.worker.finished.connect(self.thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.thread.finished.connect(self.thread.deleteLater)
+            self.worker.error.connect(self.logger.log)
+            self.worker.progress.connect(self.logger.log)
+
+            self.thread.started.connect(self.worker.run)
+            self.thread.start()
+
             self.video_feed_initialized = True
 
             # Monitor stdout and stderr while the thread is running
